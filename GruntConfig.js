@@ -98,15 +98,24 @@ module.exports = function(grunt) {
       }
     },
 
+    cssmin: {
+      target: {
+        files: {
+          './public/dist/sass.min.css' : ['./public/sass.css'],
+          './public/dist/cardanimate.min.css' : ['./public/cardanimate.css']
+        }
+      }
+    },
+
     postcss: {
       options: {
         map: true,
         processors: [
-          require('autoprefixer-core')({browsers: 'last 1 version'}).postcss
+          require('autoprefixer-core')({browsers: 'last 2 versions'}).postcss
         ]
       },
       dist: {
-        src: 'css/*.css'
+        src: 'cssmin/*.css'
       }
     }
   });
@@ -143,7 +152,7 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'concat','uglify','postcss'
+    'concat','uglify','cssmin','postcss'
   ]);
 
   grunt.registerTask('upload', function(n) {
