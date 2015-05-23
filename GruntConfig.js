@@ -1,25 +1,17 @@
-/*# GruntFile*/
-
   // "dependencies": {
-  //   "mocha": "^1.17.1",
-  //   "chai": "^1.9.0",
+  //   "autoprefixer-core": "^5.1.11",
   //   "grunt": "^0.4.4",
-  //   "grunt-contrib-jshint": "^0.9.2",
   //   "grunt-contrib-concat": "^0.3.0",
+  //   "grunt-contrib-cssmin": "^0.9.0",
+  //   "grunt-contrib-jshint": "^0.9.2",
   //   "grunt-contrib-uglify": "^0.4.0",
   //   "grunt-contrib-watch": "^0.6.1",
-  //   "grunt-shell": "^0.6.4",
-  //   "grunt-contrib-cssmin": "^0.9.0",
-  //   "grunt-nodemon": "^0.2.1",
   //   "grunt-mocha-test": "^0.10.0",
+  //   "grunt-nodemon": "^0.2.1",
+  //   "grunt-postcss": "^0.4.0",
+  //   "grunt-shell": "^0.6.4"
   // },
-  // "devDependencies": {
-  //   "supertest": "^0.10.0"
-  // },
-  // "scripts": {
-  //   "start": "node server.js"
-  // }
-
+  
 module.exports = function(grunt) {
 
   grunt.initConfig({
@@ -34,14 +26,6 @@ module.exports = function(grunt) {
       dist: {
         src: ['./public/**/*.js'],
         dest: './public/dist/<%= pkg.name %>.js'
-      }
-    },
-    mochaTest: {
-      test: {
-        options: {
-          reporter: 'spec'
-        },
-        src: ['test/**/*.js']
       }
     },
 
@@ -113,6 +97,18 @@ module.exports = function(grunt) {
         }
       }
     },
+
+    postcss: {
+      options: {
+        map: true,
+        processors: [
+          require('autoprefixer-core')({browsers: 'last 1 version'}).postcss
+        ]
+      },
+      dist: {
+        src: 'css/*.css'
+      }
+    }
   });
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -123,6 +119,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-mocha-test');
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-nodemon');
+  grunt.loadNpmTasks('grunt-postcss');
 
   grunt.registerTask('server-dev', function (target) {
     // Running nodejs in a different process and displaying output on the main console
@@ -146,7 +143,7 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'concat','uglify'
+    'concat','uglify','postcss'
   ]);
 
   grunt.registerTask('upload', function(n) {
