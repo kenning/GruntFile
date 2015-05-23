@@ -152,7 +152,7 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'concat','uglify','cssmin','postcss'
+    'concat','uglify','postcss','cssmin'
   ]);
 
   grunt.registerTask('upload', function(n) {
