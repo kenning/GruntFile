@@ -1,31 +1,96 @@
-  // "dependencies": {
-  //   "autoprefixer-core": "^5.1.11",
-  //   "grunt": "^0.4.4",
-  //   "grunt-contrib-concat": "^0.3.0",
-  //   "grunt-contrib-cssmin": "^0.9.0",
-  //   "grunt-contrib-jshint": "^0.9.2",
-  //   "grunt-contrib-uglify": "^0.4.0",
-  //   "grunt-contrib-watch": "^0.6.1",
-  //   "grunt-mocha-test": "^0.10.0",
-  //   "grunt-nodemon": "^0.2.1",
-  //   "grunt-postcss": "^0.4.0",
-  //   "grunt-shell": "^0.6.4"
-  // },
-  
 module.exports = function(grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
+    // Building
+
     concat: {
-      
       options: {
         separator: ';'
       },
-
       dist: {
-        src: ['./public/**/*.js'],
-        dest: './public/dist/<%= pkg.name %>.js'
+        src: ['./client/dist/app.js'],
+        dest: './client/dist/<%= pkg.name %>.js'
+      }
+    },
+
+    uglify: {
+      dist: {
+        files: {
+          './client/dist/<%= pkg.name %>.min.js' : ['<%= concat.dist.dest %>']
+        }
+      }
+    },
+
+    cssmin: {
+      target: {
+        files: {
+          './client/styles/styles.min.css' : ['./client/styles/styles.css']
+        }
+      }
+    },
+
+    postcss: {
+      options: {
+        map: true,
+        processors: [
+          require('autoprefixer-core')({browsers: 'last 2 versions'}).postcss
+        ]
+      },
+      dist: {
+        src: 'cssmin/*.css'
+      }
+    },
+
+    react: {
+      files: {
+        'client/dist/app.js': [
+          'client/components/app.jsx'
+        ]
+      }
+    },
+
+    // Testing
+
+    jshint: {
+      files: ['./dist/<%= pkg.name %>.min.js'],
+      options: {
+        force: 'true',
+        jshintrc: '.jshintrc',
+        ignores: [
+          'client/bower_components/**/*.js',
+          'client/dist/**/*.js'
+        ]
+      }
+    },
+
+    mochaTest: {
+      test: {
+        options: {
+          reporter: 'spec'
+        },
+        src: ['test/**/*.js']
+      }
+    },
+
+    // Watching
+
+    watch: {
+      scripts: {
+        files: [
+          'client/dist/*.js',
+          'client/components/*.jsx'
+        ],
+        tasks: [
+          'react',
+          'concat',
+          'uglify'
+        ]
+      },
+      css: {
+        files: 'client/*.css',
+        tasks: ['cssmin']
       }
     },
 
@@ -35,50 +100,7 @@ module.exports = function(grunt) {
       }
     },
 
-    uglify: {
-      dist: {
-        files: {
-          './public/dist/<%= pkg.name %>.min.js' : ['<%= concat.dist.dest %>']
-        }
-      }
-    },
-
-    jshint: {
-      files: ['./dist/<%= pkg.name %>.min.js'],
-      options: {
-        force: 'true',
-        jshintrc: '.jshintrc',
-        ignores: [
-          'public/lib/**/*.js',
-          'public/dist/**/*.js'
-        ]
-      }
-    },
-
-    cssmin: {
-      target: {
-        files: {
-          './public/dist/style.min.css' : ['./public/style.css']
-        }
-      }
-    },
-
-    watch: {
-      scripts: {
-        files: [
-          'public/client/**/*.js',
-          'public/lib/**/*.js',
-        ],
-        tasks: [
-          'concat',
-          'uglify'
-        ]
-      },
-      css: {
-        files: 'public/*.css',
-        tasks: ['cssmin']
-      }
-    },
+    // Deploying
 
     shell: {
       prodServer: {
@@ -98,26 +120,6 @@ module.exports = function(grunt) {
       }
     },
 
-    cssmin: {
-      target: {
-        files: {
-          './public/dist/sass.min.css' : ['./public/sass.css'],
-          './public/dist/cardanimate.min.css' : ['./public/cardanimate.css']
-        }
-      }
-    },
-
-    postcss: {
-      options: {
-        map: true,
-        processors: [
-          require('autoprefixer-core')({browsers: 'last 2 versions'}).postcss
-        ]
-      },
-      dist: {
-        src: 'cssmin/*.css'
-      }
-    }
   });
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -129,6 +131,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-nodemon');
   grunt.loadNpmTasks('grunt-postcss');
+  grunt.loadNpmTasks('grunt-react');
 
   grunt.registerTask('server-dev', function (target) {
     // Running nodejs in a different process and displaying output on the main console
@@ -152,7 +155,7 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'concat','uglify','postcss','cssmin'
+    'react', 'concat','uglify','postcss','cssmin'
   ]);
 
   grunt.registerTask('upload', function(n) {
