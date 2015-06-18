@@ -1,6 +1,39 @@
+// Commands:
+
+
+  // Primary commands -- use these!
+
+    // grunt serve
+      // 1. nodemon 
+      // 2. watch for changes. on change, 'grunt build'
+
+    // grunt rebase
+      // 1. runs the command 'git pull --rebase upstream master'
+      // 2. 'grunt build'
+  
+    // grunt push
+      // 1. 'grunt build'
+      // 2. 'grunt test'
+      // 3. runs the command 'git push heroku master'
+      // 4. runs the command 'git push origin master'
+  
+
+  // Secondary commands -- ideally you should not have to use these directly
+  
+    // grunt build
+      // 1. concat
+      // 2. uglify
+      // 3. cssmin
+  
+    // grunt test
+      // 1. mocha
+      // 2. jshint
+
+
 module.exports = function(grunt) {
 
   grunt.initConfig({
+
     pkg: grunt.file.readJSON('package.json'),
 
     // Building
@@ -10,15 +43,15 @@ module.exports = function(grunt) {
         separator: ';'
       },
       dist: {
-        src: ['./client/dist/app.js'],
-        dest: './client/dist/<%= pkg.name %>.js'
+        src: ['./client/js/*.js'],
+        dest: './client/built/<%= pkg.name %>.js'
       }
     },
 
     uglify: {
       dist: {
         files: {
-          './client/dist/<%= pkg.name %>.min.js' : ['<%= concat.dist.dest %>']
+          './client/built/<%= pkg.name %>.min.js' : ['<%= concat.dist.dest %>']
         }
       }
     },
@@ -26,40 +59,20 @@ module.exports = function(grunt) {
     cssmin: {
       target: {
         files: {
-          './client/styles/styles.min.css' : ['./client/styles/styles.css']
+          './client/built/styles.min.css' : ['./client/css/*.css']
         }
-      }
-    },
-
-    postcss: {
-      options: {
-        map: true,
-        processors: [
-          require('autoprefixer-core')({browsers: 'last 2 versions'}).postcss
-        ]
-      },
-      dist: {
-        src: 'cssmin/*.css'
-      }
-    },
-
-    react: {
-      files: {
-        'client/dist/app.js': [
-          'client/components/app.jsx'
-        ]
       }
     },
 
     // Testing
 
     jshint: {
-      files: ['./dist/<%= pkg.name %>.min.js'],
+      files: ['client/built/<%= pkg.name %>.js'],
       options: {
         force: 'true',
         jshintrc: '.jshintrc',
         ignores: [
-          'client/bower_components/**/*.js',
+          'client/bower_components/*.js',
           'client/dist/**/*.js'
         ]
       }
@@ -79,11 +92,9 @@ module.exports = function(grunt) {
     watch: {
       scripts: {
         files: [
-          'client/dist/*.js',
-          'client/components/*.jsx'
+          'client/dist/*.js'
         ],
         tasks: [
-          'react',
           'concat',
           'uglify'
         ]
@@ -103,14 +114,20 @@ module.exports = function(grunt) {
     // Deploying
 
     shell: {
-      prodServer: {
+      rebase: {
+        command: 'git pull --rebase upstream master',
+        options: {
+            stdout: true,
+            stderr: true
+        }
+      },
+      push: {
         command: 'git push origin master',
         options: {
             stdout: true,
             stderr: true
         }
       },
-
       herokuDeploy: {
         command: 'git push heroku master',
         options: {
@@ -131,10 +148,16 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-nodemon');
   grunt.loadNpmTasks('grunt-postcss');
-  grunt.loadNpmTasks('grunt-react');
 
-  grunt.registerTask('server-dev', function (target) {
-    // Running nodejs in a different process and displaying output on the main console
+
+  ////////////////////////////////////////////////////
+  // Primary grunt tasks
+  ////////////////////////////////////////////////////
+  
+  grunt.registerTask('serve', function (target) {
+
+    grunt.task.run([ 'build' ]);
+
     var nodemon = grunt.util.spawn({
          cmd: 'grunt',
          grunt: true,
@@ -144,32 +167,37 @@ module.exports = function(grunt) {
     nodemon.stderr.pipe(process.stderr);
 
     grunt.task.run([ 'watch' ]);
+
   });
 
+
+  grunt.registerTask('rebase', [
+    'shell:rebase',
+    'build'
+  ]);
+
+
+  grunt.registerTask('push', [
+    'build',
+    'test',
+    'push',
+    'shell:herokuDeploy',
+  ]);
+
   ////////////////////////////////////////////////////
-  // Main grunt tasks
+  // Secondary grunt tasks
   ////////////////////////////////////////////////////
 
   grunt.registerTask('test', [
-    'mochaTest','jshint'
+    'mochaTest',
+    'jshint'
   ]);
+
 
   grunt.registerTask('build', [
-    'react', 'concat','uglify','postcss','cssmin'
+    'concat',
+    'uglify',
+    'cssmin'
   ]);
 
-  grunt.registerTask('upload', function(n) {
-    if(grunt.option('prod')) {
-      grunt.task.run(['shell:prodServer'])
-      // add your production server task here
-    } else {
-      grunt.task.run([ 'server-dev' ]);
-    }
-  });
-
-  grunt.registerTask('deploy', 
-    function(n) {
-      grunt.task.run(['shell:herokuDeploy'])
-    }
-  );
 };
